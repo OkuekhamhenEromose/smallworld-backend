@@ -2,6 +2,7 @@
 Django base settings for SmallWorld Backend Assessment.
 """
 
+from urllib.parse import urlparse
 import os
 from pathlib import Path
 
@@ -62,17 +63,33 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# Database
-DATABASES = {
-    "default": {
+# Parse DATABASE_URL from .env (e.g. postgres://user:pass@host:port/db)
+def parse_database_url(url):
+    parsed = urlparse(url)
+    return {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "smallworld"),
-        "USER": os.getenv("DB_USER", "smallworld"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "smallworld"),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username,
+        "PASSWORD": parsed.password,
+        "HOST": parsed.hostname or "localhost",
+        "PORT": parsed.port or 5432,
     }
-}
+
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    DATABASES = {"default": parse_database_url(database_url)}
+else:
+    # Fallback for local dev without .env
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "smallworld"),
+            "USER": os.getenv("DB_USER", "smallworld"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "smallworld"),
+            "HOST": os.getenv("DB_HOST", "localhost"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
