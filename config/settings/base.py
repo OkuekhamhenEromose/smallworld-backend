@@ -2,8 +2,8 @@
 Django base settings for SmallWorld Backend Assessment.
 """
 
-from urllib.parse import urlparse
 import os
+from urllib.parse import urlparse
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
