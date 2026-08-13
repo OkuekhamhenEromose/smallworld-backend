@@ -84,9 +84,12 @@ def reset_password(request):
     raw_token = _generate_secure_token()
     token_hash = _hash_token(raw_token)
 
-    user.reset_token = token_hash
-    user.reset_token_expires_at = timezone.now() + timedelta(hours=1)
-    user.save(update_fields=["reset_token", "reset_token_expires_at"])
+    # Use update() to write directly to the DB, bypassing any post_save
+    # signals or custom save() logic that might clear reset_token.
+    User.objects.filter(pk=user.pk).update(
+        reset_token=token_hash,
+        reset_token_expires_at=timezone.now() + timedelta(hours=1),
+    )
 
     # Send email via Celery (pass raw_token, not hash)
     # In production: send_reset_email.delay(email, raw_token)

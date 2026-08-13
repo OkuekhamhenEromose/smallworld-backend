@@ -5,6 +5,7 @@ Tests for Feature 7: Password Reset Security.
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory
+from django.core.cache import cache
 
 from apps.users.views import reset_password, confirm_reset_password
 
@@ -13,6 +14,7 @@ User = get_user_model()
 
 class PasswordResetSecurityTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.factory = APIRequestFactory()
         self.user = User.objects.create_user(
             username="secureuser",
@@ -36,13 +38,14 @@ class PasswordResetSecurityTests(TestCase):
         req = self.factory.post("/reset/", {"email": "secure@example.com"})
         reset_password(req)
 
-        self.user.refresh_from_db()
-        self.assertEqual(len(self.user.reset_token), 64)  # SHA256 hex
-        self.assertFalse(self.user.reset_token.isdigit())
+        # Fetch fresh from DB to avoid any instance-level caching/signal side-effects
+        user = User.objects.get(email="secure@example.com")
+        self.assertEqual(len(user.reset_token), 64)  # SHA256 hex
+        self.assertFalse(user.reset_token.isdigit())
 
     def test_token_expiration_set(self):
         req = self.factory.post("/reset/", {"email": "secure@example.com"})
         reset_password(req)
 
-        self.user.refresh_from_db()
-        self.assertIsNotNone(self.user.reset_token_expires_at)
+        user = User.objects.get(email="secure@example.com")
+        self.assertIsNotNone(user.reset_token_expires_at)
