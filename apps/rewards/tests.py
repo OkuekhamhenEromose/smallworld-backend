@@ -62,6 +62,11 @@ class RewardApprovalTests(TransactionTestCase):
                 results.append(result)
             except Exception as e:
                 results.append({"error": str(e)})
+            finally:
+                # CRITICAL: Close the thread's DB connection so Django
+                # can destroy the test database after the test
+                from django.db import connection
+                connection.close()
 
         # Start two threads simultaneously
         t1 = threading.Thread(target=approve)

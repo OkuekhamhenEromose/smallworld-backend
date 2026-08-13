@@ -109,10 +109,10 @@ def process_video(self, video_id: str):
                 exc,
                 exc_info=True,
             )
-            with transaction.atomic():
-                video.status = PostVideo.STATUS_FAILED
-                video.error_message = str(exc)
-                video.save(update_fields=["status", "error_message", "updated_at"])
+            
+            video.status = PostVideo.STATUS_FAILED
+            video.error_message = str(exc)
+            video.save(update_fields=["status", "error_message", "updated_at"])
             # Re-raise the exception so Sentry sees it.
             raise
 
